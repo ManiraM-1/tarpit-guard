@@ -1,0 +1,20 @@
+[project]
+name = "tarpit-guard"
+version = "0.1.0"
+description = "Flag AI-reverse-engineering tarpits (obfuscated / token-burning code) before you waste a budget analyzing them."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+mcp = ["fastmcp>=2.0"]
+
+[project.scripts]
+tarpit-guard = "tarpit_guard.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["tarpit_guard"]
