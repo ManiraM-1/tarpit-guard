@@ -1,15 +1,21 @@
-# 🪤 tarpit-guard
+# tarpit-guard
 
-**A pre-flight guard for AI code-analysis agents.** It scores a file or repository for signs of deliberate *anti-analysis hardening* — the obfuscation and "token-burning" tricks that tools like [BLA](https://github.com/qybaihe/bla) apply to make AI reverse-engineering expensive — and tells an agent, **before it spends a budget**, whether a target is a tarpit and what to do instead.
+[![PyPI](https://img.shields.io/pypi/v/tarpit-guard)](https://pypi.org/project/tarpit-guard/)
+[![Python](https://img.shields.io/pypi/pyversions/tarpit-guard)](https://pypi.org/project/tarpit-guard/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+**A pre-flight guard for AI code-analysis agents.** It scores a file or repository for signs of deliberate *anti-analysis hardening*, the obfuscation and "token-burning" tricks that tools like [BLA](https://github.com/qybaihe/bla) apply to make AI reverse-engineering expensive, and tells an agent, **before it spends a budget**, whether a target is a tarpit and what to do instead.
 
 > One ~1K-token check that prevents a 60K-token mistake.
+
+**Contributions welcome**, especially real-world samples that widen the test corpus. See [Contributing](#contributing).
 
 ---
 
 ## Table of contents
 
 - [The problem](#the-problem)
-- [What this is — and what it is not](#what-this-is--and-what-it-is-not)
+- [What this is, and what it is not](#what-this-is-and-what-it-is-not)
 - [How it works](#how-it-works)
 - [Signals](#signals)
 - [Tool fingerprints](#tool-fingerprints)
@@ -22,6 +28,7 @@
 - [Limitations and false positives](#limitations-and-false-positives)
 - [Roadmap](#roadmap)
 - [FAQ](#faq)
+- [Contributing](#contributing)
 - [License](#license)
 
 ---
@@ -32,35 +39,35 @@ Source-hardening tools defend software by making it hostile to static analysis. 
 
 | | Original | Hardened |
 |---|---|---|
-| Size | 418 B | 184 KB (**~440×**) |
+| Size | 418 B | 184 KB (**~440x**) |
 | Lines | 15 | 2,998 |
 | Secret string in cleartext | yes | no (encrypted) |
 | Output when run | identical | identical |
 
 The hardened file pads real logic with decoy functions, wraps branches behind opaque-predicate math, encrypts string literals behind runtime decoder loops, and plants jargon "canaries" written specifically to mislead a reading agent.
 
-For an AI agent, the trap is cost. Read-and-trace the whole thing and you burn input tokens on ingestion and reasoning tokens on dead ends — and often still reach a wrong conclusion. The cheap counter is not to out-analyze the obfuscation; it is to **detect the tarpit first** and switch to dynamic analysis (run it in a sandbox, observe its behavior), which walks past nearly all static obfuscation for almost no tokens.
+For an AI agent, the trap is cost. Read-and-trace the whole thing and you burn input tokens on ingestion and reasoning tokens on dead ends, and often still reach a wrong conclusion. The cheap counter is not to out-analyze the obfuscation. It is to **detect the tarpit first** and switch to dynamic analysis (run it in a sandbox, observe its behavior), which walks past nearly all static obfuscation for almost no tokens.
 
 `tarpit-guard` is that detection step.
 
 ---
 
-## What this is — and what it is not
+## What this is, and what it is not
 
 **It is** a detector and triage guard. It answers one question: *does this look deliberately hardened, and if so, what is the cheaper way in?* It emits a score, the signals that fired, and a recommended strategy.
 
-**It is not** a deobfuscator, a cracker, or a secret extractor. It never reverses anyone's protection or recovers hidden values. That is precisely the reverse-engineering these hardening tools exist to stop — building it would make this project the thing it is meant to warn about. The line is deliberate and permanent: `tarpit-guard` reads *shape*, never *meaning*.
+**It is not** a deobfuscator, a cracker, or a secret extractor. It never reverses anyone's protection or recovers hidden values. That is precisely the reverse-engineering these hardening tools exist to stop, and building it would make this project the thing it is meant to warn about. The line is deliberate and permanent: `tarpit-guard` reads *shape*, never *meaning*.
 
 ---
 
 ## How it works
 
-The engine is pure Python standard library — no dependencies, no network, nothing to install for the core. It runs entirely on local text.
+The engine is pure Python standard library. No dependencies, no network, nothing to install for the core. It runs entirely on local text.
 
 1. **Repository sweep** (directory mode): walk the tree, skipping `node_modules`, `.git`, `dist`, `build`, and the like, and look for tool fingerprints.
-2. **Per-file analysis**: for each candidate file, compute a set of cheap structural and statistical signals from the raw text — no execution, no parsing of untrusted code.
-3. **Weighted score**: combine the signals into a 0–100 score and a confidence derived from how many independent signals fired.
-4. **Verdict**: above the threshold, the file is a tarpit; the engine returns the evidence and a recommended strategy instead of a pile of extracted facts.
+2. **Per-file analysis**: for each candidate file, compute a set of cheap structural and statistical signals from the raw text. No execution, no parsing of untrusted code.
+3. **Weighted score**: combine the signals into a 0 to 100 score and a confidence derived from how many independent signals fired.
+4. **Verdict**: above the threshold, the file is a tarpit. The engine returns the evidence and a recommended strategy instead of a pile of extracted facts.
 
 Because every signal is a count or ratio over text, the check is orders of magnitude cheaper than the analysis it protects.
 
@@ -68,12 +75,12 @@ Because every signal is a count or ratio over text, the check is orders of magni
 
 ## Signals
 
-Detection keys on signals that benign code — even heavily minified code — essentially never produces. This is deliberate: the hard problem is not spotting that a file is *machine-generated* (minified bundles are too); it is telling *hostile* obfuscation apart from *ordinary* minification. Size and line-length are explicitly **not** primary signals, because that is exactly what minification trips.
+Detection keys on signals that benign code, even heavily minified code, essentially never produces. This is deliberate. The hard problem is not spotting that a file is *machine-generated* (minified bundles are too). It is telling *hostile* obfuscation apart from *ordinary* minification. Size and line-length are explicitly **not** primary signals, because that is exactly what minification trips.
 
 | Signal | Weight | What it catches |
 |---|---:|---|
 | `opaque_predicate_density` | 0.28 | `Math.imul` tautology chains that guard real branches behind always-true math (BLA) |
-| `hex_identifier_array` | 0.28 | dense `_0x…` string-array identifiers (javascript-obfuscator family) |
+| `hex_identifier_array` | 0.28 | dense `_0x...` string-array identifiers (javascript-obfuscator family) |
 | `decoder_loops` | 0.22 | `fromCharCode` + `charCodeAt` loops that reconstruct encrypted string literals at runtime |
 | `obfuscator_control_tricks` | 0.12 | self-defending / control-flow tricks (`!![]`, `.split('\|')` dispatch) |
 | `decoy_vocabulary_density` | 0.06 | planted jargon clusters (enclave / attestation / TPM / canary) meant to mislead a reader |
@@ -81,9 +88,9 @@ Detection keys on signals that benign code — even heavily minified code — es
 
 On top of the weighted score, four **categorical markers** apply a decisive floor, because they are signatures essentially impossible in hand-written or merely-minified code: a dense `_0x` identifier array, three or more runtime decoder loops, `Math.imul` opaque-predicate chains, or repeated `!![]` self-defending tricks. Any one present pushes the file over the line.
 
-Conversely, a file **dominated by 1–2 character identifiers** (the minification tell — 60–70% in jQuery/Lodash builds, versus ~10% in hostile files) with **none** of those markers is recognized as benign minification and capped low, with the strategy "read the original source or a source map, not the bundle."
+Conversely, a file **dominated by 1 to 2 character identifiers** (the minification tell, 60 to 70% in jQuery/Lodash builds versus about 10% in hostile files) with **none** of those markers is recognized as benign minification and capped low, with the strategy "read the original source or a source map, not the bundle."
 
-The `evidence` block reports the raw counts (`Math.imul`, hex identifiers, decoder pairs, decoy hits, short-identifier ratio, …) so a human or agent can sanity-check *why* a file scored as it did.
+The `evidence` block reports the raw counts (`Math.imul`, hex identifiers, decoder pairs, decoy hits, short-identifier ratio, and so on) so a human or agent can sanity-check *why* a file scored as it did.
 
 ---
 
@@ -103,15 +110,13 @@ The fingerprint map is a plain table in `detector.py` and is meant to grow as mo
 
 ## Scoring and thresholds
 
-- **Score** — 0–100, the weighted sum of signals.
-- **Confidence** — rises with the number of independent signals that cross their own half-way mark; four or more means full confidence.
-- **Threshold** — default **55**. At or above it, `hardened` is true. Tunable with `--threshold` (CLI) or the `threshold` argument (MCP).
+- **Score**: 0 to 100, the weighted sum of signals.
+- **Confidence**: rises with the number of independent signals that cross their own half-way mark. Four or more means full confidence.
+- **Threshold**: default **55**. At or above it, `hardened` is true. Tunable with `--threshold` (CLI) or the `threshold` argument (MCP).
 
 ### Evaluation
 
-`eval_corpus.py` scores a labelled corpus (`corpus/`) of clean source, real
-minified bundles, and hostile obfuscation, and reports false positives /
-negatives. It doubles as a regression test (non-zero exit on any miss).
+`eval_corpus.py` scores a labelled corpus (`corpus/`) of clean source, real minified bundles, and hostile obfuscation, and reports false positives and false negatives. It doubles as a regression test (non-zero exit on any miss).
 
 v0.2 results (threshold 55):
 
@@ -124,21 +129,31 @@ v0.2 results (threshold 55):
 | obfuscated | bla_hardened_app.js | 78.0 | **TARPIT** |
 | obfuscated | js-obfuscator_sample.js | 85.0 | **TARPIT** |
 
-**0 false positives, 0 false negatives.** Highest benign score 9.5, lowest
-hostile score 78.0 — a **+68.5** margin, stable across any threshold from ~10 to
-~77. (For contrast, v0.1 leaned on file size and scored minified jQuery *above*
-a real obfuscated file; that regression is what this corpus exists to prevent.)
+**0 false positives, 0 false negatives.** Highest benign score 9.5, lowest hostile score 78.0, a **+68.5** margin, stable across any threshold from about 10 to about 77. (For contrast, v0.1 leaned on file size and scored minified jQuery *above* a real obfuscated file. That regression is what this corpus exists to prevent.)
 
 ---
 
 ## Install
 
+From PyPI:
+
+```bash
+pip install tarpit-guard          # core CLI, standard library only
+pip install "tarpit-guard[mcp]"   # adds the FastMCP server (fastmcp>=2.0)
+```
+
+Or run it without installing (needs pipx):
+
+```bash
+pipx run tarpit-guard path/to/code
+```
+
+For development (from a clone):
+
 ```bash
 git clone https://github.com/ManiraM-1/tarpit-guard.git
 cd tarpit-guard
-
-pip install -e .          # core CLI — standard library only
-pip install -e ".[mcp]"   # adds the FastMCP server (fastmcp>=2.0)
+pip install -e ".[mcp]"
 ```
 
 Requires Python 3.9+.
@@ -154,7 +169,7 @@ tarpit-guard path/to/repo --quiet       # only show flagged files
 tarpit-guard path/to/repo --json        # machine-readable report
 tarpit-guard path/to/repo --threshold 45
 
-python -m tarpit_guard.cli path/to/file.js   # run without installing
+python -m tarpit_guard.cli path/to/file.js   # if the console script is not on PATH
 ```
 
 **Exit codes** make it a drop-in CI gate:
@@ -192,16 +207,16 @@ It exposes three tools:
 
 ```
 encounter unfamiliar file
-        │
-        ▼
+        |
+        v
   check_file(path)
-        │
-  hardened? ──no──▶ analyze normally
-        │
+        |
+  hardened? --no--> analyze normally
+        |
        yes
-        │
-        ▼
-  skip the full read →
+        |
+        v
+  skip the full read,
   run it in a sandbox and observe I/O,
   or escalate to a human
 ```
@@ -221,7 +236,7 @@ Tool fingerprints found (strong signal of deliberate hardening):
   [bla] file: ./BLA/.bla-hardened/bla-harden-summary.json
 
 [TARPIT] score=   78 conf=1.00  ./BLA/.bla-hardened/app.js
-         182865B / 2998 lines, Math.imul×246, decoder_pairs=8, garbled_idents=190, decoy_hits=487
+         182865B / 2998 lines, Math.imul x246, decoder_pairs=8, garbled_idents=190, decoy_hits=487
          fired: opaque_predicate_density, decoder_loops, decoy_vocabulary_density
          -> Treat as a tarpit. Do NOT read the whole file or trace it statically.
             Prefer dynamic analysis (run in a sandbox and observe I/O) or escalate to a human.
@@ -234,17 +249,17 @@ Tool fingerprints found (strong signal of deliberate hardening):
 
 ```
 tarpit-guard/
-├── pyproject.toml
-├── README.md
-├── LICENSE
-├── .gitignore
-├── eval_corpus.py         # scores corpus/, reports false positives/negatives
-├── corpus/                # labelled samples: clean / minified / obfuscated
-└── tarpit_guard/
-    ├── __init__.py        # public API: analyze_file, analyze_text, repo_fingerprints
-    ├── detector.py        # scoring engine (stdlib only)
-    ├── cli.py             # command-line entry point
-    └── mcp_server.py      # FastMCP wrapper
+|- pyproject.toml
+|- README.md
+|- LICENSE
+|- .gitignore
+|- eval_corpus.py         # scores corpus/, reports false positives/negatives
+|- corpus/                # labelled samples: clean / minified / obfuscated
+|- tarpit_guard/
+   |- __init__.py         # public API: analyze_file, analyze_text, repo_fingerprints
+   |- detector.py         # scoring engine (stdlib only)
+   |- cli.py              # command-line entry point
+   |- mcp_server.py       # FastMCP wrapper
 ```
 
 ---
@@ -253,10 +268,10 @@ tarpit-guard/
 
 This is a v0.2 heuristic, and honesty about its edges matters more than a clean pitch:
 
-- **Small corpus.** It is calibrated on two hardeners (BLA, javascript-obfuscator) against clean source and real minified bundles — nine files. The separation is wide and clean, but a larger corpus (more obfuscators, more real-world bundles) is needed before leaning on it blindly.
-- **Minified vs hardened is handled, not solved.** v0.2 correctly passes minified jQuery and Lodash while flagging both obfuscators, using short-identifier dominance plus categorical markers. An exotic bundler or a deliberately minification-mimicking obfuscator could still fool it; that is what growing the corpus guards against.
+- **Small corpus.** It is calibrated on two hardeners (BLA, javascript-obfuscator) against clean source and real minified bundles, nine files in total. The separation is wide and clean, but a larger corpus (more obfuscators, more real-world bundles) is needed before leaning on it blindly.
+- **Minified vs hardened is handled, not solved.** v0.2 correctly passes minified jQuery and Lodash while flagging both obfuscators, using short-identifier dominance plus categorical markers. An exotic bundler or a deliberately minification-mimicking obfuscator could still fool it, which is what growing the corpus guards against.
 - **Static only.** It reads the file as text. It does not and should not execute anything it scans.
-- **Thresholds are empirical.** 55 is the default, with a stable margin from ~10 to ~77 on the current corpus — but it is tuned, not derived. Expect to revisit it per language and per codebase.
+- **Thresholds are empirical.** 55 is the default, with a stable margin from about 10 to about 77 on the current corpus, but it is tuned, not derived. Expect to revisit it per language and per codebase.
 
 ---
 
@@ -276,12 +291,29 @@ This is a v0.2 heuristic, and honesty about its edges matters more than a clean 
 
 **Does this crack or defeat BLA?** No. It detects that hardening is present and recommends a cheaper strategy. It never reverses the protection or extracts secrets.
 
-**Is "burning all the AI's tokens" real?** Partly. Hardening genuinely raises the cost of *static* analysis and genuinely hides string secrets. It does not reliably exhaust a budget — a dynamic approach (run it, watch it) or a budget-aware agent that probes instead of ingesting sidesteps most of it. `tarpit-guard` exists to make that cheaper path the default.
+**Is "burning all the AI's tokens" real?** Partly. Hardening genuinely raises the cost of *static* analysis and genuinely hides string secrets. It does not reliably exhaust a budget. A dynamic approach (run it, watch it) or a budget-aware agent that probes instead of ingesting sidesteps most of it. `tarpit-guard` exists to make that cheaper path the default.
 
 **Why stdlib-only for the core?** Portability and auditability. The thing that inspects untrusted code should itself be tiny, dependency-free, and easy to read.
 
 ---
 
+## Contributing
+
+Contributions are very welcome. This is early, and the most valuable help is **data, not just code**. A detector is only as good as the corpus it is tested against. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full guide.
+
+**Good first contributions:**
+
+- **Add a corpus sample.** Drop a real file into `corpus/clean/`, `corpus/minified/`, or `corpus/obfuscated/`, then run `python eval_corpus.py`. If it misclassifies your sample, that is a genuine, useful bug. Open an issue or PR with the file and its correct label.
+- **Add a hardener fingerprint.** If you know another obfuscator's tell-tale artifacts (config files, output directories, identifier patterns), add them to `FINGERPRINT_FILES` / `FINGERPRINT_DIRS` or as a new signal in `detector.py`.
+- **Report a false positive.** If `tarpit-guard` flags legitimate code (a particular bundler, a language it handles badly), that is exactly what we want to hear: a sample plus the score it got.
+- **Per-language profiles.** The signals are JS-centric today. Python, WASM-glue, and others could use their own tuning.
+
+**Ground rule:** this is a *detector*, not a deobfuscator. PRs that reverse, strip, or extract secrets from hardened code are out of scope and will not be merged. The tool reads shape, never meaning.
+
+**Workflow:** fork, branch, make sure `python eval_corpus.py` still exits clean (0 false positives / negatives), and open a PR describing what you changed and why. New detection behavior should come with a corpus sample that demonstrates it.
+
+---
+
 ## License
 
-MIT (see `LICENSE`).
+MIT (see [`LICENSE`](LICENSE)).
