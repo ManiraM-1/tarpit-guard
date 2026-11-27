@@ -11,13 +11,15 @@ FINGERPRINT_DIRS = {
 }
 
 DECOY_VOCAB = [
-    "enclave", "attestation", "tpm", "hsm", "canary", "honeypot", "honey",
+    "enclave", "attestation", "tpm", "hsm", "canary", "honeypot",
     "decoy", "opaque", "interlock", "containment", "nitro", "vsock", "hkdf",
-    "sealed", "zerotrust", "zero-trust", "entangle", "tarpit",
+    "sealed", "zerotrust", "entangle", "tarpit",
 ]
 
 IDENT_RE = re.compile(r"[A-Za-z_$][A-Za-z0-9_$]*")
-GARBLED_RE = re.compile(r"[A-Za-z]{6,}.*[A-Z][a-z0-9]*[0-9]")
+HEX_IDENT_RE = re.compile(r"_0x[0-9a-fA-F]{3,}")
+HEX_ESCAPE_RE = re.compile(r"\\x[0-9a-fA-F]{2}")
+TRUTHY_RE = re.compile(r"!\[\]")
 
 
 def _shannon_entropy(s):
@@ -41,8 +43,7 @@ def _is_garbled(ident):
         return False
     has_upper = any(c.isupper() for c in ident)
     has_lower = any(c.islower() for c in ident)
-    tail = ident[-5:]
-    return has_upper and has_lower and any(c.isdigit() for c in tail)
+    return has_upper and has_lower and any(c.isdigit() for c in ident[-5:])
 
 
 def repo_fingerprints(root):
@@ -66,76 +67,83 @@ def analyze_text(text, path=None):
     lines = text.splitlines() or [""]
     kb = max(size / 1024.0, 0.001)
 
-    max_line = max(len(l) for l in lines)
-    avg_line = size / len(lines)
-
     imul = text.count("Math.imul")
-    shifts = text.count(">>> 0") + text.count(">>>0")
-    xor = text.count("^")
-    predicate_density = (imul + shifts) / kb
-
+    hex_ident = len(HEX_IDENT_RE.findall(text))
+    hex_escape = len(HEX_ESCAPE_RE.findall(text))
+    truthy = len(TRUTHY_RE.findall(text))
+    split_pipe = text.count(".split('|')") + text.count('.split("|")')
     from_char = len(re.findall(r"fromCharCode", text))
     char_at = len(re.findall(r"charCodeAt", text))
     decoder_pairs = min(from_char, char_at)
+
+    low = text.lower()
+    decoy_hits = sum(low.count(w) for w in DECOY_VOCAB)
 
     idents = IDENT_RE.findall(text)
     unique = set(idents)
     garbled = {i for i in unique if _is_garbled(i)}
     garble_ratio = (len(garbled) / len(unique)) if unique else 0.0
+    short_ratio = (sum(1 for i in idents if len(i) <= 2) / len(idents)) if idents else 0.0
 
-    low = text.lower()
-    decoy_hits = sum(low.count(w) for w in DECOY_VOCAB)
-    decoy_density = decoy_hits / kb
-
-    comment_lines = sum(1 for l in lines
-                        if l.strip().startswith("//") or l.strip().startswith("*"))
-    comment_ratio = comment_lines / len(lines)
-
-    ident_blob = "".join(sorted(unique))
-    ident_entropy = _shannon_entropy(ident_blob)
+    imul_per_kb = imul / kb
+    hex_ident_per_kb = hex_ident / kb
+    decoy_per_kb = decoy_hits / kb
 
     signals = {
-        "max_line_length": _clamp((max_line - 200) / 2000.0),
-        "avg_line_length": _clamp((avg_line - 40) / 300.0),
-        "opaque_predicate_density": _clamp(predicate_density / 15.0),
-        "decoder_loops": _clamp(decoder_pairs / 4.0),
+        "opaque_predicate_density": _clamp(imul_per_kb / 1.5),
+        "decoder_loops": _clamp((decoder_pairs - 1) / 4.0),
+        "hex_identifier_array": _clamp(hex_ident_per_kb / 5.0),
+        "obfuscator_control_tricks": _clamp(truthy / 3.0 + split_pipe / 2.0),
+        "decoy_vocabulary_density": _clamp(decoy_per_kb / 3.0),
         "garbled_identifier_ratio": _clamp(garble_ratio / 0.25),
-        "unique_identifier_bloat": _clamp(len(unique) / 400.0),
-        "decoy_vocabulary_density": _clamp(decoy_density / 8.0),
-        "low_comment_ratio": _clamp((0.02 - comment_ratio) / 0.02) if size > 2000 else 0.0,
-        "identifier_entropy": _clamp((ident_entropy - 3.5) / 1.5),
     }
-
     weights = {
-        "max_line_length": 0.10,
-        "avg_line_length": 0.08,
-        "opaque_predicate_density": 0.20,
-        "decoder_loops": 0.18,
-        "garbled_identifier_ratio": 0.16,
-        "unique_identifier_bloat": 0.10,
-        "decoy_vocabulary_density": 0.10,
-        "low_comment_ratio": 0.03,
-        "identifier_entropy": 0.05,
+        "opaque_predicate_density": 0.28,
+        "decoder_loops": 0.22,
+        "hex_identifier_array": 0.28,
+        "obfuscator_control_tricks": 0.12,
+        "decoy_vocabulary_density": 0.06,
+        "garbled_identifier_ratio": 0.04,
     }
+    graded = sum(signals[k] * weights[k] for k in weights) * 100.0
 
-    score = sum(signals[k] * weights[k] for k in weights) * 100.0
+    markers = []
+    if hex_ident_per_kb >= 3.0:
+        markers.append(("hex_identifier_array", 85,
+                        "dense _0x string-array identifiers (javascript-obfuscator style)"))
+    if decoder_pairs >= 3:
+        markers.append(("decoder_loops", 78,
+                        "runtime string-decryption loops (fromCharCode/charCodeAt)"))
+    if imul >= 20 and imul_per_kb >= 0.5:
+        markers.append(("opaque_predicate_density", 78,
+                        "Math.imul opaque-predicate chains"))
+    if truthy >= 3:
+        markers.append(("obfuscator_control_tricks", 68,
+                        "self-defending / control-flow !![] tricks"))
+
+    floor = max((m[1] for m in markers), default=0)
+    score = max(graded, floor)
+
+    minified_profile = short_ratio >= 0.45 and len(idents) > 300
+    if not markers and minified_profile:
+        score = min(score, 35.0)
 
     fired = [k for k, v in signals.items() if v >= 0.5]
-    confidence = _clamp(len(fired) / 4.0)
+    confidence = _clamp((len(markers) + len(fired)) / 3.0)
 
     evidence = {
         "size_bytes": size,
         "line_count": len(lines),
-        "max_line_length": max_line,
         "math_imul_count": imul,
-        "shift_zero_count": shifts,
-        "xor_count": xor,
+        "hex_identifiers": hex_ident,
+        "hex_escapes": hex_escape,
+        "truthy_tricks": truthy,
         "decoder_pairs": decoder_pairs,
+        "decoy_vocab_hits": decoy_hits,
         "unique_identifiers": len(unique),
         "garbled_identifiers": len(garbled),
-        "decoy_vocab_hits": decoy_hits,
-        "comment_ratio": round(comment_ratio, 4),
-        "identifier_entropy": round(ident_entropy, 3),
+        "short_identifier_ratio": round(short_ratio, 3),
+        "identifier_entropy": round(_shannon_entropy("".join(sorted(unique))), 3),
     }
 
     return {
@@ -143,21 +151,27 @@ def analyze_text(text, path=None):
         "score": round(score, 1),
         "confidence": round(confidence, 2),
         "hardened": score >= 55,
+        "markers": [{"signal": m[0], "why": m[2]} for m in markers],
         "signals": {k: round(v, 3) for k, v in signals.items()},
         "fired_signals": fired,
+        "benign_minification": bool(minified_profile and not markers),
         "evidence": evidence,
-        "recommended_strategy": _strategy(score),
+        "recommended_strategy": _strategy(score, markers, minified_profile),
     }
 
 
-def _strategy(score):
+def _strategy(score, markers, minified_profile):
     if score >= 55:
         return ("Treat as a tarpit. Do NOT read the whole file or trace it "
                 "statically. Prefer dynamic analysis (run in a sandbox and "
                 "observe I/O) or escalate to a human.")
+    if minified_profile and not markers:
+        return ("Looks like ordinary minified/bundled code, not hostile "
+                "obfuscation. Read the original source or a source map instead "
+                "of the bundle.")
     if score >= 30:
-        return ("Mixed signals. Probe with grep/targeted reads before any "
-                "full ingest; cap the analysis budget.")
+        return ("Mixed signals. Probe with grep/targeted reads before any full "
+                "ingest; cap the analysis budget.")
     return "Looks like ordinary source. Normal analysis is fine."
 
 

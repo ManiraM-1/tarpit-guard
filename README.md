@@ -68,21 +68,22 @@ Because every signal is a count or ratio over text, the check is orders of magni
 
 ## Signals
 
-Each file is scored on weighted signals. No single one convicts; hardened code lights up several at once, which is what drives confidence.
+Detection keys on signals that benign code — even heavily minified code — essentially never produces. This is deliberate: the hard problem is not spotting that a file is *machine-generated* (minified bundles are too); it is telling *hostile* obfuscation apart from *ordinary* minification. Size and line-length are explicitly **not** primary signals, because that is exactly what minification trips.
 
 | Signal | Weight | What it catches |
 |---|---:|---|
-| `opaque_predicate_density` | 0.20 | `Math.imul` / `>>> 0` tautology chains that guard real branches behind always-true math |
-| `decoder_loops` | 0.18 | `fromCharCode` + `charCodeAt` + XOR loops that reconstruct encrypted string literals at runtime |
-| `garbled_identifier_ratio` | 0.16 | mangled names such as `encodeFrozenScopeV4ue7`, `runtimeSeedLocalScopeCfg527zm` |
-| `max_line_length` | 0.10 | single enormous machine-generated lines |
-| `unique_identifier_bloat` | 0.10 | hundreds of junk/decoy functions inflating the surface area |
-| `decoy_vocabulary_density` | 0.10 | planted jargon clusters (enclave / attestation / TPM / HSM / canary) meant to mislead a reader |
-| `avg_line_length` | 0.08 | overall machine-generated layout |
-| `identifier_entropy` | 0.05 | high-entropy name soup |
-| `low_comment_ratio` | 0.03 | generated code rarely carries comments (only applied to larger files) |
+| `opaque_predicate_density` | 0.28 | `Math.imul` tautology chains that guard real branches behind always-true math (BLA) |
+| `hex_identifier_array` | 0.28 | dense `_0x…` string-array identifiers (javascript-obfuscator family) |
+| `decoder_loops` | 0.22 | `fromCharCode` + `charCodeAt` loops that reconstruct encrypted string literals at runtime |
+| `obfuscator_control_tricks` | 0.12 | self-defending / control-flow tricks (`!![]`, `.split('\|')` dispatch) |
+| `decoy_vocabulary_density` | 0.06 | planted jargon clusters (enclave / attestation / TPM / canary) meant to mislead a reader |
+| `garbled_identifier_ratio` | 0.04 | mangled names such as `encodeFrozenScopeV4ue7` |
 
-Each signal is normalized to 0–1 against an empirical cutoff, then weighted. The `evidence` block in the output reports the raw underlying counts (file size, `Math.imul` count, decoder pairs, garbled-identifier count, decoy hits, comment ratio, identifier entropy) so a human or agent can sanity-check *why* a file was flagged.
+On top of the weighted score, four **categorical markers** apply a decisive floor, because they are signatures essentially impossible in hand-written or merely-minified code: a dense `_0x` identifier array, three or more runtime decoder loops, `Math.imul` opaque-predicate chains, or repeated `!![]` self-defending tricks. Any one present pushes the file over the line.
+
+Conversely, a file **dominated by 1–2 character identifiers** (the minification tell — 60–70% in jQuery/Lodash builds, versus ~10% in hostile files) with **none** of those markers is recognized as benign minification and capped low, with the strategy "read the original source or a source map, not the bundle."
+
+The `evidence` block reports the raw counts (`Math.imul`, hex identifiers, decoder pairs, decoy hits, short-identifier ratio, …) so a human or agent can sanity-check *why* a file scored as it did.
 
 ---
 
@@ -106,12 +107,27 @@ The fingerprint map is a plain table in `detector.py` and is meant to grow as mo
 - **Confidence** — rises with the number of independent signals that cross their own half-way mark; four or more means full confidence.
 - **Threshold** — default **55**. At or above it, `hardened` is true. Tunable with `--threshold` (CLI) or the `threshold` argument (MCP).
 
-Calibration against BLA output:
+### Evaluation
 
-| File | Score | Confidence | Verdict |
-|---|---:|---:|---|
-| original `app.js` (15 lines) | **4.4** | 0.25 | ok |
-| BLA-hardened `app.js` | **62.1** | 1.00 | TARPIT |
+`eval_corpus.py` scores a labelled corpus (`corpus/`) of clean source, real
+minified bundles, and hostile obfuscation, and reports false positives /
+negatives. It doubles as a regression test (non-zero exit on any miss).
+
+v0.2 results (threshold 55):
+
+| Bucket | File | Score | Verdict |
+|---|---|---:|---|
+| clean | jquery.source.js / lodash.source.js | 0.0 | ok |
+| clean | detector.py (contains the decoy word list) | 9.5 | ok |
+| minified | jquery.min.js | 0.0 | ok |
+| minified | lodash.min.js | 0.0 | ok |
+| obfuscated | bla_hardened_app.js | 78.0 | **TARPIT** |
+| obfuscated | js-obfuscator_sample.js | 85.0 | **TARPIT** |
+
+**0 false positives, 0 false negatives.** Highest benign score 9.5, lowest
+hostile score 78.0 — a **+68.5** margin, stable across any threshold from ~10 to
+~77. (For contrast, v0.1 leaned on file size and scored minified jQuery *above*
+a real obfuscated file; that regression is what this corpus exists to prevent.)
 
 ---
 
@@ -204,12 +220,12 @@ Tool fingerprints found (strong signal of deliberate hardening):
   [bla] file: ./BLA/.blarc
   [bla] file: ./BLA/.bla-hardened/bla-harden-summary.json
 
-[TARPIT] score= 62.1 conf=1.00  ./BLA/.bla-hardened/app.js
-         182865B / 2998 lines, Math.imul×246, decoder_pairs=8, garbled_idents=190, decoy_hits=491
-         fired: max_line_length, decoder_loops, unique_identifier_bloat, low_comment_ratio, identifier_entropy
+[TARPIT] score=   78 conf=1.00  ./BLA/.bla-hardened/app.js
+         182865B / 2998 lines, Math.imul×246, decoder_pairs=8, garbled_idents=190, decoy_hits=487
+         fired: opaque_predicate_density, decoder_loops, decoy_vocabulary_density
          -> Treat as a tarpit. Do NOT read the whole file or trace it statically.
             Prefer dynamic analysis (run in a sandbox and observe I/O) or escalate to a human.
-[ok] score=  4.4 conf=0.25  ./BLA/app.js
+[ok] score=  0.0 conf=0.00  ./BLA/app.js
 ```
 
 ---
@@ -220,7 +236,10 @@ Tool fingerprints found (strong signal of deliberate hardening):
 tarpit-guard/
 ├── pyproject.toml
 ├── README.md
+├── LICENSE
 ├── .gitignore
+├── eval_corpus.py         # scores corpus/, reports false positives/negatives
+├── corpus/                # labelled samples: clean / minified / obfuscated
 └── tarpit_guard/
     ├── __init__.py        # public API: analyze_file, analyze_text, repo_fingerprints
     ├── detector.py        # scoring engine (stdlib only)
@@ -232,23 +251,23 @@ tarpit-guard/
 
 ## Limitations and false positives
 
-This is a v0.1 heuristic, and honesty about its edges matters more than a clean pitch:
+This is a v0.2 heuristic, and honesty about its edges matters more than a clean pitch:
 
-- **Tuned against one hardener.** It is calibrated on BLA output plus a single clean negative control. It has not yet been tested against a broad corpus.
-- **Minified ≠ hardened.** A legitimately minified bundle (`vendor.js`, a production React build) shares some signals — long lines, low comments, mangled names — and may trip the score. Decoy vocabulary, opaque-predicate density, and decoder loops are what separate *hostile* obfuscation from *ordinary* minification, but the boundary needs a real test set.
+- **Small corpus.** It is calibrated on two hardeners (BLA, javascript-obfuscator) against clean source and real minified bundles — nine files. The separation is wide and clean, but a larger corpus (more obfuscators, more real-world bundles) is needed before leaning on it blindly.
+- **Minified vs hardened is handled, not solved.** v0.2 correctly passes minified jQuery and Lodash while flagging both obfuscators, using short-identifier dominance plus categorical markers. An exotic bundler or a deliberately minification-mimicking obfuscator could still fool it; that is what growing the corpus guards against.
 - **Static only.** It reads the file as text. It does not and should not execute anything it scans.
-- **Thresholds are empirical.** 55 is a starting point, not a derived constant. Expect to tune it per language and per codebase.
-
-Reducing false positives is the single most important thing between v0.1 and a version you can trust in CI.
+- **Thresholds are empirical.** 55 is the default, with a stable margin from ~10 to ~77 on the current corpus — but it is tuned, not derived. Expect to revisit it per language and per codebase.
 
 ---
 
 ## Roadmap
 
-- [ ] False-positive corpus: a set of normal + minified + obfuscated samples to calibrate against.
-- [ ] More tool fingerprints (`javascript-obfuscator`, webpack/terser signatures, PyArmor, etc.).
+- [x] False-positive corpus: normal + minified + obfuscated samples to calibrate against (`corpus/`, `eval_corpus.py`).
+- [x] Detect a second hardener family (javascript-obfuscator) alongside BLA.
+- [x] Separate hostile obfuscation from ordinary minification.
+- [ ] More tool fingerprints (webpack/terser signatures, PyArmor, obfuscator.io variants).
+- [ ] Grow the corpus (more real bundles, more obfuscators) and pin thresholds against it.
 - [ ] Per-language signal profiles (JS/TS vs Python vs WASM-glue).
-- [ ] Confidence calibration from the corpus rather than a fixed signal count.
 - [ ] Optional sandbox-runner helper that an agent can call after a tarpit verdict.
 
 ---
