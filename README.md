@@ -172,6 +172,8 @@ tarpit-guard path/to/repo --threshold 45
 python -m tarpit_guard.cli path/to/file.js   # if the console script is not on PATH
 ```
 
+See [`SCHEMA.md`](SCHEMA.md) for the frozen `--json` and MCP output schema contract.
+
 **Exit codes** make it a drop-in CI gate:
 
 | Code | Meaning |
