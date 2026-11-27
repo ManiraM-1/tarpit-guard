@@ -4,16 +4,42 @@ version = "0.2.0"
 description = "Flag AI-reverse-engineering tarpits (obfuscated / token-burning code) before you waste a budget analyzing them."
 readme = "README.md"
 requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Maniram" }]
+keywords = [
+    "mcp", "llm", "ai-agents", "obfuscation", "reverse-engineering",
+    "static-analysis", "security", "developer-tools",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+]
 dependencies = []
 
 [project.optional-dependencies]
 mcp = ["fastmcp>=2.0"]
 
+[project.urls]
+Homepage = "https://github.com/ManiraM-1/tarpit-guard"
+Repository = "https://github.com/ManiraM-1/tarpit-guard"
+Issues = "https://github.com/ManiraM-1/tarpit-guard/issues"
+
 [project.scripts]
 tarpit-guard = "tarpit_guard.cli:main"
 
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
