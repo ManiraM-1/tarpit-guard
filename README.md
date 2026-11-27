@@ -166,7 +166,7 @@ Requires Python 3.9+.
 tarpit-guard path/to/file.js            # score a single file
 tarpit-guard path/to/repo               # scan a tree + report fingerprints
 tarpit-guard path/to/repo --quiet       # only show flagged files
-tarpit-guard path/to/repo --json        # machine-readable report
+tarpit-guard path/to/repo --json        # machine-readable report (see SCHEMA.md)
 tarpit-guard path/to/repo --threshold 45
 
 python -m tarpit_guard.cli path/to/file.js   # if the console script is not on PATH
