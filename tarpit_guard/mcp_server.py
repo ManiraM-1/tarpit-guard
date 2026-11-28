@@ -19,8 +19,8 @@ def check_file(path: str) -> dict:
     """Score a single file for obfuscation / anti-analysis tarpit signals.
 
     Call this BEFORE reading or statically analyzing an unfamiliar file.
-    If hardened is true, do not ingest the whole file; run it in a sandbox
-    and observe its behavior instead.
+    If hardened is true, stop: do not read or trace this file. Skip it, or
+    report it to the user, instead of spending tokens on it.
     """
     return analyze_file(path)
 
