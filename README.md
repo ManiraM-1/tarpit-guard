@@ -169,6 +169,7 @@ tarpit-guard path/to/repo               # scan a tree + report fingerprints
 tarpit-guard path/to/repo --quiet       # only show flagged files
 tarpit-guard path/to/repo --json        # machine-readable report
 tarpit-guard path/to/repo --threshold 45
+tarpit-guard --mcp                      # start the MCP server instead (needs the [mcp] extra)
 
 python -m tarpit_guard.cli path/to/file.js   # if the console script is not on PATH
 ```
@@ -196,7 +197,7 @@ Install with the MCP extra, then run the server over stdio:
 
 ```bash
 pip install "tarpit-guard[mcp]"
-tarpit-guard-mcp            # or: python -m tarpit_guard.mcp_server
+tarpit-guard-mcp            # or: tarpit-guard --mcp, or: python -m tarpit_guard.mcp_server
 ```
 
 To add it to an MCP client such as Claude Desktop, Cursor or VS Code, use this config. It needs [uv](https://docs.astral.sh/uv/), and nothing has to be installed first:

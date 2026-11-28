@@ -21,3 +21,60 @@ jobs:
       - run: python -m pip install --upgrade build
       - run: python -m build
       - uses: pypa/gh-action-pypi-publish@release/v1
+
+  mcp-registry:
+    # Lists the release in the official MCP Registry once it is on PyPI.
+    # The registry checks PyPI for the `mcp-name:` marker in the README.
+    needs: build-and-publish
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set server.json version from the release tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp
+          mv server.tmp server.json
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Wait for the release to appear on PyPI
+        run: |
+          for i in $(seq 1 30); do
+            if curl --fail --silent "https://pypi.org/pypi/tarpit-guard/${VERSION}/json" > /dev/null; then
+              echo "tarpit-guard ${VERSION} is on PyPI"; exit 0
+            fi
+            sleep 10
+          done
+          echo "tarpit-guard ${VERSION} did not appear on PyPI in time" >&2
+          exit 1
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Download and verify mcp-publisher
+        run: |
+          set -euo pipefail
+          os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+          arch="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"
+          archive="mcp-publisher_${os}_${arch}.tar.gz"
+          base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          curl --fail --location --silent --show-error --output "$archive" "$base_url/$archive"
+          curl --fail --location --silent --show-error --output "$archive.sigstore.json" "$base_url/$archive.sigstore.json"
+          cosign verify-blob \
+            --bundle "$archive.sigstore.json" \
+            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$archive"
+          tar xzf "$archive" mcp-publisher
+          rm -f "$archive" "$archive.sigstore.json"
+
+      - name: Log in to the MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish to the MCP Registry
+        run: ./mcp-publisher publish

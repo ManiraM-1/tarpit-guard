@@ -1,0 +1,27 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.ManiraM-1/tarpit-guard",
+  "title": "tarpit-guard",
+  "description": "Detects obfuscated \"tarpit\" code so AI agents stop before burning tokens on it.",
+  "repository": {
+    "url": "https://github.com/ManiraM-1/tarpit-guard",
+    "source": "github"
+  },
+  "version": "0.2.2",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "tarpit-guard",
+      "version": "0.2.2",
+      "runtimeHint": "uvx",
+      "runtimeArguments": [
+        { "type": "positional", "value": "--from" },
+        { "type": "positional", "value": "tarpit-guard[mcp]" }
+      ],
+      "packageArguments": [
+        { "type": "positional", "value": "--mcp" }
+      ],
+      "transport": { "type": "stdio" }
+    }
+  ]
+}

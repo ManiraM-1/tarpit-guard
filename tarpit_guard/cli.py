@@ -24,13 +24,23 @@ def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="tarpit-guard",
         description="Flag AI-reverse-engineering tarpits (obfuscated / token-burning code) before you waste a budget analyzing them.")
-    parser.add_argument("path", help="File or directory to scan.")
+    parser.add_argument("path", nargs="?", help="File or directory to scan.")
     parser.add_argument("--json", action="store_true", help="Emit raw JSON.")
     parser.add_argument("--threshold", type=float, default=55.0,
                         help="Score at/above which a file is called a tarpit.")
     parser.add_argument("--quiet", action="store_true",
                         help="Only print files at/above the threshold.")
+    parser.add_argument("--mcp", action="store_true",
+                        help="Start the MCP server over stdio instead of scanning "
+                             "(needs the [mcp] extra).")
     args = parser.parse_args(argv)
+
+    if args.mcp:
+        from .mcp_server import run
+        run()
+        return 0
+    if args.path is None:
+        parser.error("the following arguments are required: path")
 
     if not os.path.exists(args.path):
         print(f"path not found: {args.path}", file=sys.stderr)
