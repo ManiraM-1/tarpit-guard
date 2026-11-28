@@ -7,12 +7,12 @@
     "url": "https://github.com/ManiraM-1/tarpit-guard",
     "source": "github"
   },
-  "version": "0.2.1",
+  "version": "0.2.2",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "tarpit-guard",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "runtimeHint": "uvx",
       "runtimeArguments": [
         { "type": "positional", "value": "--from" },

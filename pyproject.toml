@@ -1,6 +1,6 @@
 [project]
 name = "tarpit-guard"
-version = "0.2.1"
+version = "0.2.2"
 description = "Flag AI-reverse-engineering tarpits (obfuscated / token-burning code) before you waste a budget analyzing them."
 readme = "README.md"
 requires-python = ">=3.9"
