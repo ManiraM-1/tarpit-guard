@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Fails the build on any false positive or false negative in corpus/.
+      - name: Evaluate corpus
+        run: python eval_corpus.py
+
+      # The CLI exits 1 when it finds a tarpit, so check both directions.
+      - name: CLI smoke test
+        run: |
+          python -m tarpit_guard.cli corpus/clean/tiny_app.js
+          if python -m tarpit_guard.cli corpus/obfuscated/bla_hardened_app.js; then
+            echo "CLI did not flag a known obfuscated file" >&2
+            exit 1
+          fi
+          python -m tarpit_guard.cli --json corpus/obfuscated > /tmp/out.json || true
+          python -c "import json; json.load(open('/tmp/out.json'))"
+
+      # Unit tests are optional until a tests/ folder lands on main.
+      - name: Unit tests
+        run: |
+          if [ -d tests ]; then
+            python -m pip install --upgrade pytest
+            python -m pytest -q tests
+          else
+            echo "No tests/ folder yet, skipping."
+          fi
+
+  build:
+    name: Build package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade build
+      - run: python -m build
+      - name: Install wheel and run CLI
+        run: |
+          python -m pip install dist/*.whl
+          tarpit-guard corpus/clean/tiny_app.js
