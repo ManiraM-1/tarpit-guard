@@ -162,9 +162,9 @@ def analyze_text(text, path=None):
 
 def _strategy(score, markers, minified_profile):
     if score >= 55:
-        return ("Treat as a tarpit. Do NOT read the whole file or trace it "
-                "statically. Prefer dynamic analysis (run in a sandbox and "
-                "observe I/O) or escalate to a human.")
+        return ("Treat as a tarpit. Stop here: do not read, trace, or try to "
+                "deobfuscate this file. Skip it and move on, or flag it for a "
+                "human.")
     if minified_profile and not markers:
         return ("Looks like ordinary minified/bundled code, not hostile "
                 "obfuscation. Read the original source or a source map instead "

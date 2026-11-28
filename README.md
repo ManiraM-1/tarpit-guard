@@ -47,7 +47,7 @@ Source-hardening tools defend software by making it hostile to static analysis. 
 
 The hardened file pads real logic with decoy functions, wraps branches behind opaque-predicate math, encrypts string literals behind runtime decoder loops, and plants jargon "canaries" written specifically to mislead a reading agent.
 
-For an AI agent, the trap is cost. Read-and-trace the whole thing and you burn input tokens on ingestion and reasoning tokens on dead ends, and often still reach a wrong conclusion. The cheap counter is not to out-analyze the obfuscation. It is to **detect the tarpit first** and switch to dynamic analysis (run it in a sandbox, observe its behavior), which walks past nearly all static obfuscation for almost no tokens.
+For an AI agent, the trap is cost. Read-and-trace the whole thing and you burn input tokens on ingestion and reasoning tokens on dead ends, and often still reach a wrong conclusion. The cheap counter is not to out-analyze the obfuscation. It is to **detect the tarpit first and stop**: don't read it, don't trace it, skip it or hand it to a human. A ~1K-token check replaces a 60K-token dead end.
 
 `tarpit-guard` is that detection step.
 
@@ -219,9 +219,9 @@ encounter unfamiliar file
        yes
         |
         v
-  skip the full read,
-  run it in a sandbox and observe I/O,
-  or escalate to a human
+  stop: don't read or trace it,
+  skip the file, or flag it
+  for a human
 ```
 
 The guard turns "read everything and hope" into a deliberate, budgeted decision.
@@ -241,8 +241,8 @@ Tool fingerprints found (strong signal of deliberate hardening):
 [TARPIT] score=   78 conf=1.00  ./BLA/.bla-hardened/app.js
          182865B / 2998 lines, Math.imul x246, decoder_pairs=8, garbled_idents=190, decoy_hits=487
          fired: opaque_predicate_density, decoder_loops, decoy_vocabulary_density
-         -> Treat as a tarpit. Do NOT read the whole file or trace it statically.
-            Prefer dynamic analysis (run in a sandbox and observe I/O) or escalate to a human.
+         -> Treat as a tarpit. Stop here: do not read, trace, or try to deobfuscate
+            this file. Skip it and move on, or flag it for a human.
 [ok] score=  0.0 conf=0.00  ./BLA/app.js
 ```
 
@@ -286,7 +286,6 @@ This is a v0.2 heuristic, and honesty about its edges matters more than a clean 
 - [ ] More tool fingerprints (webpack/terser signatures, PyArmor, obfuscator.io variants).
 - [ ] Grow the corpus (more real bundles, more obfuscators) and pin thresholds against it.
 - [ ] Per-language signal profiles (JS/TS vs Python vs WASM-glue).
-- [ ] Optional sandbox-runner helper that an agent can call after a tarpit verdict.
 
 ---
 
@@ -294,7 +293,7 @@ This is a v0.2 heuristic, and honesty about its edges matters more than a clean 
 
 **Does this crack or defeat BLA?** No. It detects that hardening is present and recommends a cheaper strategy. It never reverses the protection or extracts secrets.
 
-**Is "burning all the AI's tokens" real?** Partly. Hardening genuinely raises the cost of *static* analysis and genuinely hides string secrets. It does not reliably exhaust a budget. A dynamic approach (run it, watch it) or a budget-aware agent that probes instead of ingesting sidesteps most of it. `tarpit-guard` exists to make that cheaper path the default.
+**Is "burning all the AI's tokens" real?** Partly. Hardening genuinely raises the cost of *static* analysis and genuinely hides string secrets. It does not always exhaust a budget, but it reliably wastes one: an agent that reads and traces a hardened file spends heavily and often still reaches the wrong conclusion. `tarpit-guard` exists so the agent notices early and stops instead.
 
 **Why stdlib-only for the core?** Portability and auditability. The thing that inspects untrusted code should itself be tiny, dependency-free, and easy to read.
 

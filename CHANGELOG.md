@@ -15,6 +15,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - Contributor guide, issue templates, code of conduct, security policy, pull
   request template, and this changelog.
 
+### Changed
+- A tarpit verdict now tells the agent to stop and skip the file (or flag it
+  for a human) instead of suggesting sandboxed dynamic analysis. The README
+  and the MCP tool description say the same. The `--json` shape is unchanged.
+
 ## [0.2.0] - 2026-11-27
 
 First public release.
