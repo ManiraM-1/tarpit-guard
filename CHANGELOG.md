@@ -6,6 +6,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-28
+
 ### Added
 - `tarpit-guard-mcp` command to start the MCP server, plus a ready-to-paste
   MCP client config in the README.
@@ -37,5 +39,6 @@ First public release.
 - FastMCP server exposing `check_file`, `check_source`, and `scan_repo`.
 - Labelled evaluation corpus and the `eval_corpus.py` regression harness.
 
-[Unreleased]: https://github.com/ManiraM-1/tarpit-guard/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/ManiraM-1/tarpit-guard/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/ManiraM-1/tarpit-guard/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/ManiraM-1/tarpit-guard/releases/tag/v0.2.0
