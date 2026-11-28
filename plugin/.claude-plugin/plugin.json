@@ -16,5 +16,8 @@
     "static-analysis",
     "ai-agents",
     "tokens"
-  ]
+  ],
+  "documentationUrl": "https://github.com/ManiraM-1/tarpit-guard#readme",
+  "privacyPolicyUrl": "https://github.com/ManiraM-1/tarpit-guard/blob/main/PRIVACY.md",
+  "supportUrl": "https://github.com/ManiraM-1/tarpit-guard/issues"
 }
