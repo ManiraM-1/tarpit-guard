@@ -3,6 +3,7 @@ import json
 import os
 import sys
 
+from . import __version__
 from .detector import analyze_file, repo_fingerprints
 
 SCAN_EXTS = {".js", ".mjs", ".cjs", ".ts", ".jsx", ".tsx", ".py", ".wasm.js"}
@@ -24,6 +25,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="tarpit-guard",
         description="Flag AI-reverse-engineering tarpits (obfuscated / token-burning code) before you waste a budget analyzing them.")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("path", nargs="?", help="File or directory to scan.")
     parser.add_argument("--json", action="store_true", help="Emit raw JSON.")
     parser.add_argument("--threshold", type=float, default=55.0,
