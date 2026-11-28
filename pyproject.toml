@@ -37,6 +37,7 @@ Issues = "https://github.com/ManiraM-1/tarpit-guard/issues"
 
 [project.scripts]
 tarpit-guard = "tarpit_guard.cli:main"
+tarpit-guard-mcp = "tarpit_guard.mcp_server:run"
 
 [build-system]
 requires = ["setuptools>=77"]

@@ -1,6 +1,10 @@
 import os
+import sys
 
-from fastmcp import FastMCP
+try:
+    from fastmcp import FastMCP
+except ImportError:  # pragma: no cover - only hit without the [mcp] extra
+    sys.exit("The MCP server needs the optional extra: pip install 'tarpit-guard[mcp]'")
 
 from .detector import analyze_file, analyze_text, repo_fingerprints
 
