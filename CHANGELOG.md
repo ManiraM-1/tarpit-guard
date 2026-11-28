@@ -6,6 +6,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `tarpit-guard --mcp` starts the MCP server (same as `tarpit-guard-mcp`).
+- `server.json` and an automatic step that publishes each release to the
+  official MCP Registry as `io.github.ManiraM-1/tarpit-guard`.
+
 ## [0.2.1] - 2026-11-28
 
 ### Added
