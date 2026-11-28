@@ -28,7 +28,7 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-mcp = ["fastmcp>=2.0"]
+mcp = ["fastmcp>=2.3"]
 
 [project.urls]
 Homepage = "https://github.com/ManiraM-1/tarpit-guard"
