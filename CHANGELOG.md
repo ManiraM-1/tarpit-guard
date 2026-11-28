@@ -7,6 +7,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- `tarpit-guard-mcp` command to start the MCP server, plus a ready-to-paste
+  MCP client config in the README.
 - `SCHEMA.md`, documenting the `--json` output, and contract tests that keep it
   stable ([#6](https://github.com/ManiraM-1/tarpit-guard/pull/6)).
 - CI that runs the corpus evaluation, a CLI smoke test, and the unit tests on

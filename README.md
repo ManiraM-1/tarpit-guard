@@ -192,10 +192,24 @@ See [`SCHEMA.md`](SCHEMA.md) for the frozen `--json` and MCP output schema contr
 
 ## MCP usage (for agents)
 
-Run the server:
+Install with the MCP extra, then run the server over stdio:
 
 ```bash
-python -m tarpit_guard.mcp_server
+pip install "tarpit-guard[mcp]"
+tarpit-guard-mcp            # or: python -m tarpit_guard.mcp_server
+```
+
+To add it to an MCP client such as Claude Desktop, Cursor or VS Code, use this config. It needs [uv](https://docs.astral.sh/uv/), and nothing has to be installed first:
+
+```json
+{
+  "mcpServers": {
+    "tarpit-guard": {
+      "command": "uvx",
+      "args": ["--from", "tarpit-guard[mcp]", "tarpit-guard-mcp"]
+    }
+  }
+}
 ```
 
 It exposes three tools:
@@ -312,6 +326,8 @@ Contributions are very welcome. This is early, and the most valuable help is **d
 - **Per-language profiles.** The signals are JS-centric today. Python, WASM-glue, and others could use their own tuning.
 
 New here? Browse the [good first issues](https://github.com/ManiraM-1/tarpit-guard/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22). Please also read the [Code of Conduct](CODE_OF_CONDUCT.md). To report a security problem privately, see [SECURITY.md](SECURITY.md). Release notes live in [CHANGELOG.md](CHANGELOG.md).
+
+<!-- mcp-name: io.github.ManiraM-1/tarpit-guard -->
 
 **Ground rule:** this is a *detector*, not a deobfuscator. PRs that reverse, strip, or extract secrets from hardened code are out of scope and will not be merged. The tool reads shape, never meaning.
 
