@@ -79,7 +79,8 @@ cleverness.
 
 Bump the version in every place below, or `tests/test_release_versions.py`
 fails: `pyproject.toml`, `server.json`, `mcpb/manifest.json`,
-`mcpb/pyproject.toml`, and `plugin/.claude-plugin/plugin.json` plus the
-`tarpit-guard[mcp]==` pin in `plugin/.mcp.json`. Publishing a GitHub release
+`mcpb/pyproject.toml`, and `plugin/.claude-plugin/plugin.json`. If you changed
+`tarpit_guard/__init__.py`, `detector.py` or `cli.py`, copy them into
+`plugin/skills/tarpit-check/scripts/tarpit_guard/` too. Publishing a GitHub release
 then uploads to PyPI, updates the MCP Registry, and attaches the Claude
 Desktop extension (`.mcpb`) to the release.

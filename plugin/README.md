@@ -10,21 +10,17 @@ Some code is deliberately obfuscated to trap AI agents: reading or tracing it bu
 
 ## What it adds
 
-One local MCP server, `tarpit-guard`, with three read-only tools:
-
-- `check_file`: check one file before reading it.
-- `check_source`: check code that is already in memory, such as a paste or a diff.
-- `scan_repo`: scan a folder for obfuscator fingerprints and tarpit files.
+One skill, `tarpit-check`. It tells Claude when to run the check and what to do with the result. The detector itself ships inside the skill as a small, readable Python script that uses only the standard library, so there is nothing to download or install.
 
 ## How to use it
 
-Ask Claude something like "check vendor/app.min.js for a tarpit before you read it" or "scan this repo for tarpits first". If a result says `hardened: true`, Claude should skip that file.
+Claude runs the check on its own before reading suspicious code. You can also ask, for example: "check vendor/app.min.js for a tarpit before you read it" or "scan this repo for tarpits first". If a file is flagged, Claude skips it.
 
 ## What it runs and what data it sends
 
-The server is started with `uvx --from tarpit-guard[mcp]==0.2.2 tarpit-guard-mcp`, so it needs [uv](https://docs.astral.sh/uv/). The first start downloads the pinned `tarpit-guard` package and its dependencies from PyPI. After that, everything runs locally. The tools only read the files or text you point them at and measure their shape. They never run, decode or deobfuscate code, never make network requests, and never store or send your data anywhere. See the [privacy policy](https://github.com/ManiraM-1/tarpit-guard/blob/main/PRIVACY.md).
+The skill runs `python3` on the bundled script `skills/tarpit-check/scripts/tarpit_check.py`, with the file or folder you want checked. The script only reads those files and measures the shape of their text. It never runs, decodes or deobfuscates code, never makes network requests, and never stores or sends your data anywhere. It needs Python 3.9 or newer. See the [privacy policy](https://github.com/ManiraM-1/tarpit-guard/blob/main/PRIVACY.md).
 
-The local server loads in Claude Code and in Cowork sessions that run on your computer.
+Prefer MCP tools? Use the Claude Desktop extension or the PyPI package from the main repository instead.
 
 ## License
 
