@@ -6,6 +6,15 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `Dockerfile` for running the MCP server in a container, and `glama.json`
+  for the Glama directory listing.
+
+### Changed
+- MCP tools now describe every parameter, carry read-only annotations and
+  clearer descriptions, and the server sends usage instructions to clients.
+- The `[mcp]` extra now requires `fastmcp>=2.3`.
+
 ## [0.2.2] - 2026-11-28
 
 ### Added

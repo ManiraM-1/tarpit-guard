@@ -213,7 +213,14 @@ To add it to an MCP client such as Claude Desktop, Cursor or VS Code, use this c
 }
 ```
 
-It exposes three tools:
+Or run it in Docker, mounting the code to check read-only:
+
+```bash
+docker build -t tarpit-guard .
+docker run -i --rm -v "$PWD:/work:ro" tarpit-guard
+```
+
+It exposes three read-only tools:
 
 | Tool | Use |
 |---|---|

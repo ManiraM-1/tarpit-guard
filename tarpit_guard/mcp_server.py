@@ -1,41 +1,78 @@
 import os
 import sys
+from typing import Annotated
 
 try:
     from fastmcp import FastMCP
+    from pydantic import Field
 except ImportError:  # pragma: no cover - only hit without the [mcp] extra
     sys.exit("The MCP server needs the optional extra: pip install 'tarpit-guard[mcp]'")
 
 from .detector import analyze_file, analyze_text, repo_fingerprints
 
-mcp = FastMCP("tarpit-guard")
+mcp = FastMCP(
+    "tarpit-guard",
+    instructions=(
+        "Pre-flight tarpit detector. Before reading an unfamiliar or suspicious "
+        "file or repo, call check_file or scan_repo. If a result is hardened, stop: "
+        "do not read, trace, or deobfuscate it. Skip it or tell the user."
+    ),
+)
 
 SCAN_EXTS = {".js", ".mjs", ".cjs", ".ts", ".jsx", ".tsx", ".py"}
 SKIP_DIRS = {"node_modules", ".git", "dist", "build", "__pycache__", ".venv"}
 
 
-@mcp.tool()
-def check_file(path: str) -> dict:
-    """Score a single file for obfuscation / anti-analysis tarpit signals.
+READ_ONLY = {
+    "readOnlyHint": True,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+}
 
-    Call this BEFORE reading or statically analyzing an unfamiliar file.
-    If hardened is true, stop: do not read or trace this file. Skip it, or
-    report it to the user, instead of spending tokens on it.
+
+@mcp.tool(annotations={"title": "Check a file for a tarpit", **READ_ONLY})
+def check_file(
+    path: Annotated[str, Field(description="Path to the file to check, e.g. 'vendor/app.min.js'.")],
+) -> dict:
+    """Check one file for deliberate anti-AI obfuscation (a "tarpit") before reading it.
+
+    Call this BEFORE reading or analyzing an unfamiliar or suspicious file. It only
+    measures the text's shape; it never runs, decodes, or deobfuscates anything.
+
+    Returns a report with `score` (0-100), `hardened` (true when score >= 55),
+    `confidence`, the `fired_signals`, and a `recommended_strategy`.
+    If `hardened` is true, stop: do not read or trace this file. Skip it, or report
+    it to the user, instead of spending tokens on it.
     """
     return analyze_file(path)
 
 
-@mcp.tool()
-def check_source(text: str, label: str = "snippet") -> dict:
-    """Score a raw source string for tarpit signals without touching disk."""
+@mcp.tool(annotations={"title": "Check source text for a tarpit", **READ_ONLY})
+def check_source(
+    text: Annotated[str, Field(description="The raw source code to check.")],
+    label: Annotated[str, Field(description="A name for this snippet, echoed back as `path` in the report.")] = "snippet",
+) -> dict:
+    """Check a piece of source code for deliberate anti-AI obfuscation without touching disk.
+
+    Use this when you have code in memory (a paste, a diff, a fetched file) rather than
+    a path. Returns the same report as `check_file`. If `hardened` is true, stop and do
+    not analyze the code further.
+    """
     return analyze_text(text, path=label)
 
 
-@mcp.tool()
-def scan_repo(root: str, threshold: float = 55.0) -> dict:
-    """Scan a directory tree: report tool fingerprints and any tarpit files.
+@mcp.tool(annotations={"title": "Scan a folder for tarpits", **READ_ONLY})
+def scan_repo(
+    root: Annotated[str, Field(description="Path to the directory to scan.")],
+    threshold: Annotated[float, Field(description="Score at or above which a file counts as a tarpit (0-100).", ge=0, le=100)] = 55.0,
+) -> dict:
+    """Scan a directory for known obfuscator fingerprints and tarpit files.
 
-    Use this before an agent commits a budget to understanding a repo.
+    Use this before committing a budget to understanding an unfamiliar repository.
+    Skips node_modules, .git, dist, build, __pycache__ and .venv, and checks JS/TS and
+    Python files. Returns `scanned`, `flagged`, `tool_fingerprints`, `flagged_files`
+    and `all_results`. Skip every file in `flagged_files` instead of reading it.
     """
     if not os.path.isdir(root):
         return {"error": f"not a directory: {root}"}
