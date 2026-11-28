@@ -17,13 +17,23 @@ Run it first, before you read or analyze:
 
 ## How to run it
 
-The detector ships inside this skill as plain Python (standard library only). Run the script in this skill's `scripts/` folder with the path to check:
+The check is the open-source `tarpit-guard` command-line tool (https://pypi.org/project/tarpit-guard/, source at https://github.com/ManiraM-1/tarpit-guard). It is pure Python with no dependencies.
+
+If the `tarpit-guard` command is already installed, run:
 
 ```bash
-python3 <this skill's folder>/scripts/tarpit_check.py path/to/file-or-folder
+tarpit-guard path/to/file-or-folder
 ```
 
-Add `--json` for a machine-readable report, or `--quiet` to list only flagged files. It needs Python 3.9 or newer. It never runs, decodes or deobfuscates the code it checks, and it makes no network requests.
+Otherwise, if `uv` is installed, run the pinned release without installing it:
+
+```bash
+uvx tarpit-guard@0.2.2 path/to/file-or-folder
+```
+
+If neither is available, tell the user the check needs `tarpit-guard` and point them to the install instructions in the project README (https://github.com/ManiraM-1/tarpit-guard#install). Do not install anything without the user's agreement.
+
+Add `--json` for a machine-readable report, or `--quiet` to list only flagged files. The tool never runs, decodes or deobfuscates the code it checks, and it makes no network requests while it runs.
 
 ## What to do with the result
 
