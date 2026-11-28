@@ -1,5 +1,6 @@
 # tarpit-guard
 
+[![CI](https://github.com/ManiraM-1/tarpit-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/ManiraM-1/tarpit-guard/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/tarpit-guard)](https://pypi.org/project/tarpit-guard/)
 [![Python](https://img.shields.io/pypi/pyversions/tarpit-guard)](https://pypi.org/project/tarpit-guard/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -8,7 +9,7 @@
 
 > One ~1K-token check that prevents a 60K-token mistake.
 
-**Contributions welcome**, especially real-world samples that widen the test corpus. See [Contributing](#contributing).
+**Contributions welcome**, especially real-world samples that widen the test corpus. See [Contributing](#contributing), or pick up a [good first issue](https://github.com/ManiraM-1/tarpit-guard/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
 ---
 
@@ -309,6 +310,8 @@ Contributions are very welcome. This is early, and the most valuable help is **d
 - **Add a hardener fingerprint.** If you know another obfuscator's tell-tale artifacts (config files, output directories, identifier patterns), add them to `FINGERPRINT_FILES` / `FINGERPRINT_DIRS` or as a new signal in `detector.py`.
 - **Report a false positive.** If `tarpit-guard` flags legitimate code (a particular bundler, a language it handles badly), that is exactly what we want to hear: a sample plus the score it got.
 - **Per-language profiles.** The signals are JS-centric today. Python, WASM-glue, and others could use their own tuning.
+
+New here? Browse the [good first issues](https://github.com/ManiraM-1/tarpit-guard/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22). Please also read the [Code of Conduct](CODE_OF_CONDUCT.md). To report a security problem privately, see [SECURITY.md](SECURITY.md). Release notes live in [CHANGELOG.md](CHANGELOG.md).
 
 **Ground rule:** this is a *detector*, not a deobfuscator. PRs that reverse, strip, or extract secrets from hardened code are out of scope and will not be merged. The tool reads shape, never meaning.
 
