@@ -23,6 +23,7 @@
 - [Scoring and thresholds](#scoring-and-thresholds)
 - [Install](#install)
 - [CLI usage](#cli-usage)
+- [Use it in Claude](#use-it-in-claude)
 - [MCP usage (for agents)](#mcp-usage-for-agents)
 - [Example output](#example-output)
 - [Project layout](#project-layout)
@@ -30,6 +31,7 @@
 - [Roadmap](#roadmap)
 - [FAQ](#faq)
 - [Contributing](#contributing)
+- [Privacy Policy](#privacy-policy)
 - [License](#license)
 
 ---
@@ -191,6 +193,20 @@ See [`SCHEMA.md`](SCHEMA.md) for the frozen `--json` and MCP output schema contr
 
 ---
 
+## Use it in Claude
+
+**Claude Desktop (one click, nothing else to install).** Download `tarpit-guard-<version>.mcpb` from the [latest release](https://github.com/ManiraM-1/tarpit-guard/releases/latest) and double-click it, or drag it into the Claude Desktop window. You can also open **Settings > Extensions > Advanced settings > Install Extension...** and pick the file. Claude Desktop sets up Python and the dependencies for you.
+
+**Claude Code.** Install the plugin from this repository:
+
+```
+/plugin install tarpit-guard --marketplace ManiraM-1/tarpit-guard
+```
+
+Both give Claude the three tools below. Then ask, for example, "check vendor/app.min.js for a tarpit before you read it". To build the extension yourself, run `mcpb/build.sh` (needs Node.js and Python 3.11+).
+
+---
+
 ## MCP usage (for agents)
 
 Install with the MCP extra, then run the server over stdio:
@@ -285,6 +301,8 @@ tarpit-guard/
    |- detector.py         # scoring engine (stdlib only)
    |- cli.py              # command-line entry point
    |- mcp_server.py       # FastMCP wrapper
+|- mcpb/                  # Claude Desktop extension: manifest, icon, build.sh
+|- plugin/                # Claude plugin (Claude Code, Cowork)
 ```
 
 ---
@@ -339,6 +357,12 @@ New here? Browse the [good first issues](https://github.com/ManiraM-1/tarpit-gua
 **Ground rule:** this is a *detector*, not a deobfuscator. PRs that reverse, strip, or extract secrets from hardened code are out of scope and will not be merged. The tool reads shape, never meaning.
 
 **Workflow:** fork, branch, make sure `python eval_corpus.py` still exits clean (0 false positives / negatives), and open a PR describing what you changed and why. New detection behavior should come with a corpus sample that demonstrates it.
+
+---
+
+## Privacy Policy
+
+tarpit-guard collects no data. It runs locally, makes no network requests while it runs, and stores nothing. Installing it downloads packages from PyPI. Full policy: [PRIVACY.md](PRIVACY.md).
 
 ---
 

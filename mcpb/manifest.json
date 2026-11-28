@@ -1,0 +1,54 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/mcpb/main/dist/mcpb-manifest-v0.4.schema.json",
+  "manifest_version": "0.4",
+  "name": "tarpit-guard",
+  "display_name": "tarpit-guard",
+  "version": "0.2.2",
+  "description": "Detects obfuscated \"tarpit\" code so Claude stops before burning tokens on it.",
+  "long_description": "Some code is deliberately obfuscated to trap AI agents: it looks like normal source, but reading or tracing it burns a huge number of tokens and leads nowhere. tarpit-guard is a pre-flight check. Before Claude reads an unfamiliar file or repository, it scores the text 0-100 for deliberate anti-analysis obfuscation. If a file is flagged as hardened, Claude stops and tells you instead of spending your budget on it.\n\nIt only measures the shape of the text. It never runs, decodes or deobfuscates anything, and it never touches the network. Everything happens locally on your computer.",
+  "author": {
+    "name": "Maniram",
+    "url": "https://github.com/ManiraM-1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ManiraM-1/tarpit-guard"
+  },
+  "homepage": "https://github.com/ManiraM-1/tarpit-guard",
+  "documentation": "https://github.com/ManiraM-1/tarpit-guard#readme",
+  "support": "https://github.com/ManiraM-1/tarpit-guard/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "uv",
+    "entry_point": "server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": ["run", "--directory", "${__dirname}", "server.py"]
+    }
+  },
+  "tools": [
+    {
+      "name": "check_file",
+      "description": "Check one file for deliberate anti-AI obfuscation before reading it."
+    },
+    {
+      "name": "check_source",
+      "description": "Check a piece of source code held in memory for deliberate anti-AI obfuscation."
+    },
+    {
+      "name": "scan_repo",
+      "description": "Scan a folder for known obfuscator fingerprints and tarpit files."
+    }
+  ],
+  "keywords": ["security", "obfuscation", "static-analysis", "ai-agents", "tokens", "developer-tools"],
+  "license": "MIT",
+  "privacy_policies": [
+    "https://github.com/ManiraM-1/tarpit-guard/blob/main/PRIVACY.md"
+  ],
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "python": ">=3.11"
+    }
+  }
+}

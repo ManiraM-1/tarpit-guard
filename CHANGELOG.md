@@ -7,6 +7,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Claude Desktop extension: every release now attaches a one-click
+  `tarpit-guard-<version>.mcpb` bundle (built by `mcpb/build.sh`).
+- Claude plugin in `plugin/`, installable in Claude Code with
+  `/plugin install tarpit-guard --marketplace ManiraM-1/tarpit-guard`.
+- `PRIVACY.md` privacy policy.
 - `Dockerfile` for running the MCP server in a container, and `glama.json`
   for the Glama directory listing.
 

@@ -74,3 +74,12 @@ sample that demonstrates it.
 Keep the detector readable: it is a tool for inspecting untrusted code, so it
 should itself be easy to audit. Prefer clear names and small functions over
 cleverness.
+
+## Releasing (maintainers)
+
+Bump the version in every place below, or `tests/test_release_versions.py`
+fails: `pyproject.toml`, `server.json`, `mcpb/manifest.json`,
+`mcpb/pyproject.toml`, and `plugin/.claude-plugin/plugin.json` plus the
+`tarpit-guard[mcp]==` pin in `plugin/.mcp.json`. Publishing a GitHub release
+then uploads to PyPI, updates the MCP Registry, and attaches the Claude
+Desktop extension (`.mcpb`) to the release.

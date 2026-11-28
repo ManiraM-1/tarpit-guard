@@ -1,0 +1,11 @@
+# Runtime dependencies for the Claude Desktop extension (.mcpb bundle).
+# Claude Desktop reads this file and installs them with uv; the tarpit_guard
+# package itself is copied into the bundle by build.sh.
+[project]
+name = "tarpit-guard-extension"
+version = "0.2.2"
+description = "tarpit-guard packaged as a Claude Desktop extension"
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp==4.2.6",
+]
