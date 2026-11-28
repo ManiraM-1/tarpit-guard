@@ -69,3 +69,23 @@ jobs:
         run: |
           python -m pip install dist/*.whl
           tarpit-guard corpus/clean/tiny_app.js
+
+  extension:
+    name: Claude Desktop extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: astral-sh/setup-uv@v6
+      - name: Build the .mcpb bundle
+        run: mcpb/build.sh
+      - name: Start the bundle and list its tools
+        run: |
+          mkdir -p "$RUNNER_TEMP/bundle"
+          unzip -q dist/*.mcpb -d "$RUNNER_TEMP/bundle"
+          python mcpb/smoke_test.py "$RUNNER_TEMP/bundle" "$PWD/corpus/obfuscated/bla_hardened_app.js"

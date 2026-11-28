@@ -22,6 +22,34 @@ jobs:
       - run: python -m build
       - uses: pypa/gh-action-pypi-publish@release/v1
 
+  desktop-extension:
+    # Builds the Claude Desktop extension and attaches it to the release,
+    # so people can download tarpit-guard-<version>.mcpb and double-click it.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check the tag matches the package version
+        run: |
+          VERSION="$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")"
+          if [ "${GITHUB_REF_NAME#v}" != "$VERSION" ]; then
+            echo "Release tag $GITHUB_REF_NAME does not match pyproject.toml version $VERSION" >&2
+            exit 1
+          fi
+      - name: Build the .mcpb bundle
+        run: mcpb/build.sh
+      - name: Attach it to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" dist/*.mcpb --clobber
+
   mcp-registry:
     # Lists the release in the official MCP Registry once it is on PyPI.
     # The registry checks PyPI for the `mcp-name:` marker in the README.

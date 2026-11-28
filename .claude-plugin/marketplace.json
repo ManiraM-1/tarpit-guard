@@ -1,0 +1,15 @@
+{
+  "name": "tarpit-guard",
+  "description": "tarpit-guard: a pre-flight check that stops Claude before it burns tokens on obfuscated code.",
+  "owner": {
+    "name": "Maniram",
+    "url": "https://github.com/ManiraM-1"
+  },
+  "plugins": [
+    {
+      "name": "tarpit-guard",
+      "source": "./plugin",
+      "description": "Detects obfuscated \"tarpit\" code so Claude stops before burning tokens on it."
+    }
+  ]
+}

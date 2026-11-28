@@ -1,0 +1,26 @@
+{
+  "name": "tarpit-guard",
+  "displayName": "tarpit-guard",
+  "version": "0.2.2",
+  "description": "Detects obfuscated \"tarpit\" code so Claude stops before burning tokens on it.",
+  "author": {
+    "name": "Maniram",
+    "url": "https://github.com/ManiraM-1"
+  },
+  "homepage": "https://github.com/ManiraM-1/tarpit-guard",
+  "repository": "https://github.com/ManiraM-1/tarpit-guard",
+  "license": "MIT",
+  "keywords": [
+    "security",
+    "obfuscation",
+    "static-analysis",
+    "ai-agents",
+    "tokens"
+  ],
+  "network": {
+    "hosts": [
+      "pypi.org",
+      "files.pythonhosted.org"
+    ]
+  }
+}
