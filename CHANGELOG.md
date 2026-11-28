@@ -6,6 +6,9 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `tarpit-guard --version` prints the installed version and exits.
+
 ## [0.2.2] - 2026-11-28
 
 ### Added
