@@ -33,15 +33,13 @@ class TestReleaseVersions(unittest.TestCase):
         plugin = json.loads((ROOT / "plugin" / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
         self.assertEqual(plugin["version"], VERSION)
 
-    def test_plugin_bundles_the_current_detector(self):
-        bundled = ROOT / "plugin" / "skills" / "tarpit-check" / "scripts" / "tarpit_guard"
-        for name in ("__init__.py", "detector.py", "cli.py"):
-            with self.subTest(file=name):
-                self.assertEqual(
-                    (bundled / name).read_bytes(),
-                    (ROOT / "tarpit_guard" / name).read_bytes(),
-                    f"plugin copy of {name} is stale: copy tarpit_guard/{name} over it",
-                )
+    def test_plugin_skill_pins_the_current_release(self):
+        skill = (ROOT / "plugin" / "skills" / "tarpit-check" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn(f"uvx tarpit-guard@{VERSION} ", skill)
+
+    def test_plugin_readme_pins_the_current_release(self):
+        readme = (ROOT / "plugin" / "README.md").read_text(encoding="utf-8")
+        self.assertIn(f"uvx tarpit-guard@{VERSION} ", readme)
 
     def test_extension_lists_every_server_tool(self):
         manifest = json.loads((ROOT / "mcpb" / "manifest.json").read_text(encoding="utf-8"))

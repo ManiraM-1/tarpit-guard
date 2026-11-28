@@ -197,13 +197,13 @@ See [`SCHEMA.md`](SCHEMA.md) for the frozen `--json` and MCP output schema contr
 
 **Claude Desktop (one click, nothing else to install).** Download `tarpit-guard-<version>.mcpb` from the [latest release](https://github.com/ManiraM-1/tarpit-guard/releases/latest) and double-click it, or drag it into the Claude Desktop window. You can also open **Settings > Extensions > Advanced settings > Install Extension...** and pick the file. Claude Desktop sets up Python and the dependencies for you.
 
-**Claude Code.** Install the plugin from this repository. It adds a `tarpit-check` skill that carries the detector itself, so nothing else is downloaded:
+**Claude Code.** Install the plugin from this repository. It adds a `tarpit-check` skill that tells Claude to run the `tarpit-guard` CLI before reading suspicious code:
 
 ```
 /plugin install tarpit-guard --marketplace ManiraM-1/tarpit-guard
 ```
 
-The extension gives Claude the three MCP tools below; the plugin runs the same checks through its skill. Then ask, for example, "check vendor/app.min.js for a tarpit before you read it". To build the extension yourself, run `mcpb/build.sh` (needs Node.js and Python 3.11+).
+The extension gives Claude the three MCP tools below; the plugin's skill runs the same checks through the CLI. Then ask, for example, "check vendor/app.min.js for a tarpit before you read it". To build the extension yourself, run `mcpb/build.sh` (needs Node.js and Python 3.11+).
 
 ---
 
@@ -302,7 +302,7 @@ tarpit-guard/
    |- cli.py              # command-line entry point
    |- mcp_server.py       # FastMCP wrapper
 |- mcpb/                  # Claude Desktop extension: manifest, icon, build.sh
-|- plugin/                # Claude plugin: tarpit-check skill with a copy of the detector
+|- plugin/                # Claude plugin: tarpit-check skill (Markdown only)
 ```
 
 ---

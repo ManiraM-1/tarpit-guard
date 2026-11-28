@@ -10,7 +10,7 @@ Some code is deliberately obfuscated to trap AI agents: reading or tracing it bu
 
 ## What it adds
 
-One skill, `tarpit-check`. It tells Claude when to run the check and what to do with the result. The detector itself ships inside the skill as a small, readable Python script that uses only the standard library, so there is nothing to download or install.
+One skill, `tarpit-check`. It tells Claude when to run the check and what to do with the result. The plugin itself contains only instructions; the check is done by the open-source [`tarpit-guard`](https://pypi.org/project/tarpit-guard/) command-line tool.
 
 ## How to use it
 
@@ -18,7 +18,7 @@ Claude runs the check on its own before reading suspicious code. You can also as
 
 ## What it runs and what data it sends
 
-The skill runs `python3` on the bundled script `skills/tarpit-check/scripts/tarpit_check.py`, with the file or folder you want checked. The script only reads those files and measures the shape of their text. It never runs, decodes or deobfuscates code, never makes network requests, and never stores or sends your data anywhere. It needs Python 3.9 or newer. See the [privacy policy](https://github.com/ManiraM-1/tarpit-guard/blob/main/PRIVACY.md).
+The skill asks Claude to run `tarpit-guard <path>` if it is installed, or `uvx tarpit-guard@0.2.2 <path>` if [uv](https://docs.astral.sh/uv/) is installed. With uvx, the first run downloads that pinned release from PyPI. If neither is available, Claude points you to the [install instructions](https://github.com/ManiraM-1/tarpit-guard#install) and does not install anything without your agreement. The tool only reads the files you point it at and measures the shape of their text. It never runs, decodes or deobfuscates code, makes no network requests while it runs, and never stores or sends your data anywhere. See the [privacy policy](https://github.com/ManiraM-1/tarpit-guard/blob/main/PRIVACY.md).
 
 Prefer MCP tools? Use the Claude Desktop extension or the PyPI package from the main repository instead.
 
