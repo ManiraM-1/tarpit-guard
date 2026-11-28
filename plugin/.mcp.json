@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "tarpit-guard": {
-      "command": "uvx",
-      "args": ["--from", "tarpit-guard[mcp]==0.2.2", "tarpit-guard-mcp"]
-    }
-  }
-}

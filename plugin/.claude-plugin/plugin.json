@@ -16,11 +16,5 @@
     "static-analysis",
     "ai-agents",
     "tokens"
-  ],
-  "network": {
-    "hosts": [
-      "pypi.org",
-      "files.pythonhosted.org"
-    ]
-  }
+  ]
 }
